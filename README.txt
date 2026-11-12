@@ -1,33 +1,33 @@
 # OpenMP Matrix-Vector Multiplication Benchmark & Performance Analysis
 
-C++ ve **OpenMP** kullanılarak yoğun matris-vektör çarpımı ($y = Ax$) işleminin tek çekirdek (seri) ve çok çekirdek (paralel) başarımını karşılaştıran bir analiz ve benchmark aracıdır.
+A performance analysis and benchmarking tool developed in C++ using **OpenMP** to evaluate and compare the execution performance of dense matrix-vector multiplication ($y = Ax$) in serial versus parallel implementations[cite: 1].
 
-Proje; farklı iş parçacığı (thread) sayıları ve OpenMP iş zamanlama stratejileri (`static`, `dynamic`, `guided`) altında çalışma sürelerini ölçer, seri referans süreye göre hızlanma (**Speedup**) oranlarını hesaplar ve sonuçları konsolda biçimlendirilmiş tablolar halinde sunar.
-
----
-
-## 📌 Temel Özellikler
-
-- **Dinamik Thread Ölçekleme:** Donanımın desteklediği maksimum thread sayısını otomatik tespit eder veya komut satırından girilen üst sınıra göre ölçeklenir ($1, 2, 4, 8, 16$).
-- **İş Zamanlama (Scheduling) Karşılaştırması:** 
-  - `static`: Döngü iterasyonlarının thread'lere derleme/çalışma anında eşit bloklar halinde bölünmesi.
-  - `dynamic`: Boşa çıkan thread'lerin sıradaki iş bloğunu çalışma anında havuzdan çekmesi (dengesiz yükler için).
-  - `guided`: Başlangıçta büyük, sonlara doğru azalan parça boyutlarıyla iş dağıtımı.
-- **Hassas Zaman Ölçümü:** Süre ölçümleri `std::chrono::high_resolution_clock` ile mikrosaniye/saniye hassasiyetinde yapılır.
-- **Biçimlendirilmiş Metrik Çıktısı:** Süre ve Speedup değerlerini iki ayrı karşılaştırmalı ASCII tablosunda raporlar.
+The program benchmarks execution times across various thread counts and OpenMP scheduling strategies (`static`, `dynamic`, `guided`), calculates speedup factors relative to the serial baseline, and outputs formatted summary tables directly to the console[cite: 1].
 
 ---
 
-## 🛠️ Gereksinimler
+## 📌 Key Features
 
-- **C++ Derleyicisi:** GCC (`g++`) $\ge 9.0$ veya Clang (C++11 standardı desteği)
-- **OpenMP Kütüphanesi:** Derleyicinizin OpenMP desteği aktif olmalıdır (`libgomp`).
+- **Dynamic Thread Scaling:** Automatically identifies the system's maximum supported threads or scales based on a command-line upper limit ($1, 2, 4, 8, 16$)[cite: 1].
+- **Work Scheduling Evaluation:**
+  - `static`: Iterations are divided into equal-sized chunks assigned to threads before execution.
+  - `dynamic`: Idle threads pull loop chunks from a shared queue at runtime (ideal for non-uniform workloads).
+  - `guided`: Chunks start large and decrease exponentially in size over time.
+- **High-Precision Profiling:** Wall-clock execution times are measured with microsecond accuracy via `std::chrono::high_resolution_clock`[cite: 1].
+- **Formatted Terminal Reports:** Outputs execution durations and relative speedups in clean ASCII tables[cite: 1].
 
 ---
 
-## ⚙️ Derleme
+## 🛠️ Prerequisites
 
-Derleme sırasında OpenMP desteğini açmak için `-fopenmp` ve optimum döngü vektörizasyonu için `-O3` optimizasyon bayrağını kullanın:
+- **C++ Compiler:** GCC (`g++`) $\ge 9.0$ or Clang (supporting C++11 standard)
+- **OpenMP Runtime:** OpenMP compiler support must be enabled (`libgomp`).
+
+---
+
+## ⚙️ Compilation
+
+Compile with the `-fopenmp` flag to enable OpenMP and `-O3` for optimal loop vectorization:
 
 ### Linux / macOS
 ```bash
@@ -41,21 +41,21 @@ g++ -O3 -fopenmp main.cpp -o matrix_app.exe
 
 ---
 
-## 🚀 Kullanım
+## 🚀 Usage
 
-Uygulama isteğe bağlı olarak maksimum kullanılacak thread sayısını komut satırı argümanı olarak alır:
+Optionally pass the maximum number of threads as a command-line argument[cite: 1]:
 
 ```bash
-# Maksimum 8 thread kullanacak şekilde çalıştırma:
+# Run tests up to a maximum of 8 threads:
 ./matrix_app 8
 
-# Argüman verilmezse sistemdeki tüm mantıksal çekirdekleri kullanır:
+# Run with all available logical cores detected by the system:
 ./matrix_app
 ```
 
 ---
 
-## 📊 Örnek Çıktı
+## 📊 Sample Output
 
 ```text
 Matris Boyutu: 3000x3000
@@ -86,4 +86,8 @@ Paralel Testler Basliyor...
   Thread Sayisi         static        dynamic         guided
 ---------------------------------------------------------
               1       1.004959       1.002198       1.003300
-              2       1.938363       1.85177
+              2       1.938363       1.851777       1.915966
+              4       3.562500       3.359116       3.500960
+              8       5.682243       5.094972       5.461078
+---------------------------------------------------------
+```
