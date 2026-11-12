@@ -1,93 +1,57 @@
-# OpenMP Matrix-Vector Multiplication Benchmark & Performance Analysis
+# OpenMP ile Matris-Vektör Çarpımı ve Performans Analizi
 
-A performance analysis and benchmarking tool developed in C++ using **OpenMP** to evaluate and compare the execution performance of dense matrix-vector multiplication ($y = Ax$) in serial versus parallel implementations[cite: 1].
+Bu proje, C++ ve **OpenMP** kütüphanesi kullanılarak çoklu iş parçacığı (multi-threading) ortamlarında yoğun matris-vektör çarpımı ($y = Ax$) işleminin nasıl paralelleştirildiğini ve ölçeklendiğini gösterir[cite: 1]. Projede tek thread (seri) ve çoklu thread (paralel) yöntemler uygulanmış; farklı zamanlama (scheduling) stratejilerinin başarım ve hızlanma (speedup) oranları karşılaştırılmıştır[cite: 1].
 
-The program benchmarks execution times across various thread counts and OpenMP scheduling strategies (`static`, `dynamic`, `guided`), calculates speedup factors relative to the serial baseline, and outputs formatted summary tables directly to the console[cite: 1].
+## 🚀 Proje Özeti
 
----
+Program, $3000 \times 3000$ boyutundaki rastgele oluşturulmuş bir matris ($A$) ile vektör ($x$) üzerinde çarpma işlemini iki temel yaklaşım altında gerçekleştirir[cite: 1]:
 
-## 📌 Key Features
+1. **Seri Hesaplama:** Tek çekirdek üzerinde referans çalışma süresini ($T_{serial}$) hesaplar[cite: 1].
+2. **Paralel Hesaplama:** Belirlenen thread sayıları ($1, 2, 4, 8, 16$) üzerinden matris satırlarını thread'lere paylaştırarak çalışır[cite: 1].
+3. **Analiz ve Raporlama:** Her konfigürasyon için süreyi ölçer, referans süreye göre hızlanmayı ($Speedup = T_{serial} / T_{parallel}$) hesaplar ve sonuçları konsolda tablo halinde sunar[cite: 1].
 
-- **Dynamic Thread Scaling:** Automatically identifies the system's maximum supported threads or scales based on a command-line upper limit ($1, 2, 4, 8, 16$)[cite: 1].
-- **Work Scheduling Evaluation:**
-  - `static`: Iterations are divided into equal-sized chunks assigned to threads before execution.
-  - `dynamic`: Idle threads pull loop chunks from a shared queue at runtime (ideal for non-uniform workloads).
-  - `guided`: Chunks start large and decrease exponentially in size over time.
-- **High-Precision Profiling:** Wall-clock execution times are measured with microsecond accuracy via `std::chrono::high_resolution_clock`[cite: 1].
-- **Formatted Terminal Reports:** Outputs execution durations and relative speedups in clean ASCII tables[cite: 1].
+### Uygulanan Scheduling Yöntemleri
 
----
+OpenMP paralel döngü mekanizmasında iş yükü dağıtımı için üç farklı strateji analiz edilir[cite: 1]:
 
-## 🛠️ Prerequisites
+1. **Static (`schedule(static)`):**
+   - Döngü iterasyonları thread'lere derleme/çalışma anında sabit ve eşit bloklar halinde bölünür.
+   - **Gözlem:** Düşük ek yük (overhead) üretir, dengeli iş yüklerinde en yüksek verimi sunar.
 
-- **C++ Compiler:** GCC (`g++`) $\ge 9.0$ or Clang (supporting C++11 standard)
-- **OpenMP Runtime:** OpenMP compiler support must be enabled (`libgomp`).
+2. **Dynamic (`schedule(dynamic)`):**
+   - İş blokları çalışma anında boşta kalan thread'lere dinamik bir iş kuyruğu üzerinden dağıtılır.
+   - **Gözlem:** Her döngü iterasyonunun süresi farklı olan dengesiz yükler için uygundur; ek yükü `static`'e göre daha fazladır.
 
----
+3. **Guided (`schedule(guided)`):**
+   - Başlangıçta thread'lere büyük iş parçaları verilir, iterasyon ilerledikçe blok boyutları logaritmik olarak küçülür.
+   - **Gözlem:** `dynamic` stratejisine göre kuyruk erişim yükünü azaltırken yük dengesini korur.
 
-## ⚙️ Compilation
+## 🛠️ Teknolojiler
 
-Compile with the `-fopenmp` flag to enable OpenMP and `-O3` for optimal loop vectorization:
+* **Dil:** C++ (C++11 standardı)
+* **Kütüphane:** OpenMP (`omp.h`, `libgomp`)[cite: 1]
+* **Platform:** Cross-platform (Linux / Windows)
 
-### Linux / macOS
-```bash
-g++ -O3 -fopenmp main.cpp -o matrix_app
-```
+## ⚙️ Kurulum ve Çalıştırma
 
-### Windows (MinGW-w64)
-```powershell
-g++ -O3 -fopenmp main.cpp -o matrix_app.exe
-```
+Kodları derlemek için OpenMP destekleyen bir C++ derleyicisine (GCC/MinGW gibi) ihtiyacınız vardır.
 
----
-
-## 🚀 Usage
-
-Optionally pass the maximum number of threads as a command-line argument[cite: 1]:
+### Derleme
 
 ```bash
-# Run tests up to a maximum of 8 threads:
+# Linux / macOS
+g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matrix_app
+
+# Windows (MinGW/GCC)
+g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matrix_app.exe
+```
+
+### Çalıştırma
+
+```bash
+# Belirli bir thread üst sınırı ile çalıştırma (örn: 8 thread)
 ./matrix_app 8
 
-# Run with all available logical cores detected by the system:
+# Sistemdeki tüm donanımsal mantıksal çekirdekleri kullanarak çalıştırma
 ./matrix_app
-```
-
----
-
-## 📊 Sample Output
-
-```text
-Matris Boyutu: 3000x3000
----------------------------------------
-Seri Calisma Suresi (T_serial): 0.018240 s
----------------------------------------
-Paralel Testler Basliyor...
-
---- Schedule: static ---
-  Threads: 1, Sure: 0.018150 s, Speedup: 1.004959
-  Threads: 2, Sure: 0.009410 s, Speedup: 1.938363
-  Threads: 4, Sure: 0.005120 s, Speedup: 3.562500
-  Threads: 8, Sure: 0.003210 s, Speedup: 5.682243
-
-### Tablo: Calisma Sureleri (s) ###
----------------------------------------------------------
-  Thread Sayisi         static        dynamic         guided
----------------------------------------------------------
-              1       0.018150       0.018200       0.018180
-              2       0.009410       0.009850       0.009520
-              4       0.005120       0.005430       0.005210
-              8       0.003210       0.003580       0.003340
----------------------------------------------------------
-
-### Tablo: Speedup Degerleri ###
-(T_serial = 0.018240 s)
----------------------------------------------------------
-  Thread Sayisi         static        dynamic         guided
----------------------------------------------------------
-              1       1.004959       1.002198       1.003300
-              2       1.938363       1.851777       1.915966
-              4       3.562500       3.359116       3.500960
-              8       5.682243       5.094972       5.461078
----------------------------------------------------------
 ```
