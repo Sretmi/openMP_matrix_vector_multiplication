@@ -1,96 +1,55 @@
-OpenMP Matrix-Vector Multiplication Benchmark
-A C++ benchmarking tool designed to measure, compare, and analyze the performance of dense matrix-vector multiplication (
-y=A⋅x) using OpenMP multithreading.   
-openmp_matrix_vector_carpim.cpp
+# OpenMP Matrix-Vector Multiplication & Performance Analysis
 
-The program runs a baseline serial implementation, tests parallel execution across configurable thread counts (1, 2, 4, 8, 16), and outputs performance comparison tables including execution time and speedup factors.   
-openmp_matrix_vector_carpim.cpp
+A multi-threaded benchmarking tool developed in C++ using OpenMP to analyze, implement, and compare dense matrix-vector multiplication ($y = A \cdot x$) across sequential and parallel execution paradigms.
 
-Technical Overview
-Problem Dimension: 
-3000×3000 matrix size by default (
-M=3000,N=3000).   
-openmp_matrix_vector_carpim.cpp
+The program benchmarks standard serial execution against multi-threaded OpenMP implementations, evaluating execution durations, scheduling strategies, and computational speedup across varying thread counts[cite: 1].
 
-Memory Layout: 1D contiguous dynamically allocated vector (std::vector<double>) mapped as a 2D matrix via the row-major index macro MAT_ACCESS(A, i, j, N).   
-openmp_matrix_vector_carpim.cpp
+---
 
-Parallelization Strategy: Data parallelism applied over the outer loop (
-M rows) using OpenMP #pragma omp parallel for.   
-openmp_matrix_vector_carpim.cpp
+## 📌 Computational Workflow
 
-Metrics Tracked: Wall-clock execution time via std::chrono::high_resolution_clock and relative speedup (
-S= 
-T 
-parallel
-​
- 
-T 
-serial
-​
- 
-​
- ).   
-openmp_matrix_vector_carpim.cpp
+The program allocates a dense matrix $A$ of size $3000 \times 3000$ and vectors $x$ and $y$ using contiguous memory representations (`std::vector<double>`), executing through the following stages[cite: 1]:
 
-Note on Scheduling: While the benchmark loop iterates through labels static, dynamic, and guided, the OpenMP directive in run_test is currently hardcoded to schedule(static). To dynamically evaluate different OpenMP schedules at runtime, update the pragma to schedule(runtime) and call omp_set_schedule() accordingly.   
-openmp_matrix_vector_carpim.cpp
+1. **Data Initialization:** Fills matrix $A$ and vector $x$ with randomly generated numerical values[cite: 1]. Elements are accessed via row-major index mapping using the `MAT_ACCESS(A, i, j, N)` macro[cite: 1].
+2. **Serial Baseline:** Computes $y[i] = \sum_{j=0}^{N-1} A[i][j] \cdot x[j]$ sequentially on a single thread to establish the baseline execution time ($T_{serial}$)[cite: 1].
+3. **Parallel Computation:** Distributes the outer row loop among worker threads using OpenMP work-sharing directives (`#pragma omp parallel for`) across specified thread counts[cite: 1].
+4. **Performance Tabulation:** Aggregates runtimes and speedup metrics ($S = \frac{T_{serial}}{T_{parallel}}$) into comparative Markdown-style console tables[cite: 1].
 
-Prerequisites
-C++ Compiler: GCC (g++) 
-≥ 7.0 or Clang with OpenMP support.
+---
 
-OpenMP Runtime Library: Typically bundled with standard GCC distributions (libgomp).
+## ⚙️ Scheduling Strategies
 
-Compilation
-Compile using g++ with the -fopenmp flag and -O3 optimization:
+The benchmark evaluates work-sharing behavior across three standard OpenMP loop scheduling policies[cite: 1]:
 
-Bash
-g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matvec_benchmark
-Usage
-Run with the default maximum hardware threads detected automatically:
+### 1. Static Scheduling (`schedule(static)`)
+- **Mechanism:** Iterations are divided into equal-sized chunks and distributed statically among threads before execution begins[cite: 1].
+- **Trade-offs:** Minimal scheduling and runtime overhead; optimal for homogeneous workloads where each row computation requires identical operations[cite: 1].
 
-Bash
-./matvec_benchmark
-Or pass the maximum number of threads as a command-line argument:
+### 2. Dynamic Scheduling (`schedule(dynamic)`)
+- **Mechanism:** Iterations are divided into chunks and assigned to threads dynamically at runtime as they complete previous assignments[cite: 1].
+- **Trade-offs:** Better load balancing for irregular or unpredictable workloads, but introduces higher synchronization and dispatch overhead[cite: 1].
 
-Bash
-# Benchmark up to 8 threads
-./matvec_benchmark 8
-If the specified or hardware-detected thread count is lower than 16, higher thread count tiers (e.g., 8, 16) are pruned automatically.   
-openmp_matrix_vector_carpim.cpp
+### 3. Guided Scheduling (`schedule(guided)`)
+- **Mechanism:** Work chunks are assigned dynamically with exponentially decreasing chunk sizes over time down to a minimum threshold[cite: 1].
+- **Trade-offs:** Provides an adaptive balance between the low overhead of static scheduling and the load-balancing properties of dynamic scheduling[cite: 1].
 
-Sample Output
-Plaintext
-Matris Boyutu: 3000x3000
----------------------------------------
-Seri Calisma Suresi (T_serial): 0.018230 s
----------------------------------------
-Paralel Testler Basliyor...
+---
 
---- Schedule: static ---
-  Threads: 1, Sure: 0.018150 s, Speedup: 1.004408
-  Threads: 2, Sure: 0.009420 s, Speedup: 1.935244
-  Threads: 4, Sure: 0.005110 s, Speedup: 3.567515
-  Threads: 8, Sure: 0.003250 s, Speedup: 5.609231
+## 🛠️ Prerequisites
 
-### Tablo: Calisma Sureleri (s) ###
----------------------------------------------------------
-  Thread Sayisi         static        dynamic         guided
----------------------------------------------------------
-              1       0.018150       0.018140       0.018160
-              2       0.009420       0.009450       0.009410
-              4       0.005110       0.005130       0.005090
-              8       0.003250       0.003280       0.003240
----------------------------------------------------------
+- **C++ Compiler:** GCC (`g++`) $\ge 9.0$ or Clang with OpenMP support enabled
+- **OpenMP Runtime Library:** `libgomp` (bundled with standard GCC distributions)[cite: 1]
 
-### Tablo: Speedup Degerleri ###
-(T_serial = 0.018230 s)
----------------------------------------------------------
-  Thread Sayisi         static        dynamic         guided
----------------------------------------------------------
-              1       1.004408       1.004961       1.003855
-              2       1.935244       1.929101       1.937301
-              4       3.567515       3.553606       3.581532
-              8       5.609231       5.557927       5.626543
----------------------------------------------------------
+---
+
+## 💻 Compilation & Execution
+
+Compile the source code using the `-fopenmp` flag and `-O3` compiler optimization:
+
+### Build
+```bash
+# Linux / macOS
+g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matvec_app
+
+# Windows (MinGW-w64)
+g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matvec_app.exe
