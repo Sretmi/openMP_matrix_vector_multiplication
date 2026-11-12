@@ -1,57 +1,96 @@
-# OpenMP ile Matris-Vektör Çarpımı ve Performans Analizi
+OpenMP Matrix-Vector Multiplication Benchmark
+A C++ benchmarking tool designed to measure, compare, and analyze the performance of dense matrix-vector multiplication (
+y=A⋅x) using OpenMP multithreading.   
+openmp_matrix_vector_carpim.cpp
 
-Bu proje, C++ ve **OpenMP** kütüphanesi kullanılarak çoklu iş parçacığı (multi-threading) ortamlarında yoğun matris-vektör çarpımı ($y = Ax$) işleminin nasıl paralelleştirildiğini ve ölçeklendiğini gösterir[cite: 1]. Projede tek thread (seri) ve çoklu thread (paralel) yöntemler uygulanmış; farklı zamanlama (scheduling) stratejilerinin başarım ve hızlanma (speedup) oranları karşılaştırılmıştır[cite: 1].
+The program runs a baseline serial implementation, tests parallel execution across configurable thread counts (1, 2, 4, 8, 16), and outputs performance comparison tables including execution time and speedup factors.   
+openmp_matrix_vector_carpim.cpp
 
-## 🚀 Proje Özeti
+Technical Overview
+Problem Dimension: 
+3000×3000 matrix size by default (
+M=3000,N=3000).   
+openmp_matrix_vector_carpim.cpp
 
-Program, $3000 \times 3000$ boyutundaki rastgele oluşturulmuş bir matris ($A$) ile vektör ($x$) üzerinde çarpma işlemini iki temel yaklaşım altında gerçekleştirir[cite: 1]:
+Memory Layout: 1D contiguous dynamically allocated vector (std::vector<double>) mapped as a 2D matrix via the row-major index macro MAT_ACCESS(A, i, j, N).   
+openmp_matrix_vector_carpim.cpp
 
-1. **Seri Hesaplama:** Tek çekirdek üzerinde referans çalışma süresini ($T_{serial}$) hesaplar[cite: 1].
-2. **Paralel Hesaplama:** Belirlenen thread sayıları ($1, 2, 4, 8, 16$) üzerinden matris satırlarını thread'lere paylaştırarak çalışır[cite: 1].
-3. **Analiz ve Raporlama:** Her konfigürasyon için süreyi ölçer, referans süreye göre hızlanmayı ($Speedup = T_{serial} / T_{parallel}$) hesaplar ve sonuçları konsolda tablo halinde sunar[cite: 1].
+Parallelization Strategy: Data parallelism applied over the outer loop (
+M rows) using OpenMP #pragma omp parallel for.   
+openmp_matrix_vector_carpim.cpp
 
-### Uygulanan Scheduling Yöntemleri
+Metrics Tracked: Wall-clock execution time via std::chrono::high_resolution_clock and relative speedup (
+S= 
+T 
+parallel
+​
+ 
+T 
+serial
+​
+ 
+​
+ ).   
+openmp_matrix_vector_carpim.cpp
 
-OpenMP paralel döngü mekanizmasında iş yükü dağıtımı için üç farklı strateji analiz edilir[cite: 1]:
+Note on Scheduling: While the benchmark loop iterates through labels static, dynamic, and guided, the OpenMP directive in run_test is currently hardcoded to schedule(static). To dynamically evaluate different OpenMP schedules at runtime, update the pragma to schedule(runtime) and call omp_set_schedule() accordingly.   
+openmp_matrix_vector_carpim.cpp
 
-1. **Static (`schedule(static)`):**
-   - Döngü iterasyonları thread'lere derleme/çalışma anında sabit ve eşit bloklar halinde bölünür.
-   - **Gözlem:** Düşük ek yük (overhead) üretir, dengeli iş yüklerinde en yüksek verimi sunar.
+Prerequisites
+C++ Compiler: GCC (g++) 
+≥ 7.0 or Clang with OpenMP support.
 
-2. **Dynamic (`schedule(dynamic)`):**
-   - İş blokları çalışma anında boşta kalan thread'lere dinamik bir iş kuyruğu üzerinden dağıtılır.
-   - **Gözlem:** Her döngü iterasyonunun süresi farklı olan dengesiz yükler için uygundur; ek yükü `static`'e göre daha fazladır.
+OpenMP Runtime Library: Typically bundled with standard GCC distributions (libgomp).
 
-3. **Guided (`schedule(guided)`):**
-   - Başlangıçta thread'lere büyük iş parçaları verilir, iterasyon ilerledikçe blok boyutları logaritmik olarak küçülür.
-   - **Gözlem:** `dynamic` stratejisine göre kuyruk erişim yükünü azaltırken yük dengesini korur.
+Compilation
+Compile using g++ with the -fopenmp flag and -O3 optimization:
 
-## 🛠️ Teknolojiler
+Bash
+g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matvec_benchmark
+Usage
+Run with the default maximum hardware threads detected automatically:
 
-* **Dil:** C++ (C++11 standardı)
-* **Kütüphane:** OpenMP (`omp.h`, `libgomp`)[cite: 1]
-* **Platform:** Cross-platform (Linux / Windows)
+Bash
+./matvec_benchmark
+Or pass the maximum number of threads as a command-line argument:
 
-## ⚙️ Kurulum ve Çalıştırma
+Bash
+# Benchmark up to 8 threads
+./matvec_benchmark 8
+If the specified or hardware-detected thread count is lower than 16, higher thread count tiers (e.g., 8, 16) are pruned automatically.   
+openmp_matrix_vector_carpim.cpp
 
-Kodları derlemek için OpenMP destekleyen bir C++ derleyicisine (GCC/MinGW gibi) ihtiyacınız vardır.
+Sample Output
+Plaintext
+Matris Boyutu: 3000x3000
+---------------------------------------
+Seri Calisma Suresi (T_serial): 0.018230 s
+---------------------------------------
+Paralel Testler Basliyor...
 
-### Derleme
+--- Schedule: static ---
+  Threads: 1, Sure: 0.018150 s, Speedup: 1.004408
+  Threads: 2, Sure: 0.009420 s, Speedup: 1.935244
+  Threads: 4, Sure: 0.005110 s, Speedup: 3.567515
+  Threads: 8, Sure: 0.003250 s, Speedup: 5.609231
 
-```bash
-# Linux / macOS
-g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matrix_app
+### Tablo: Calisma Sureleri (s) ###
+---------------------------------------------------------
+  Thread Sayisi         static        dynamic         guided
+---------------------------------------------------------
+              1       0.018150       0.018140       0.018160
+              2       0.009420       0.009450       0.009410
+              4       0.005110       0.005130       0.005090
+              8       0.003250       0.003280       0.003240
+---------------------------------------------------------
 
-# Windows (MinGW/GCC)
-g++ -O3 -fopenmp openmp_matrix_vector_carpim.cpp -o matrix_app.exe
-```
-
-### Çalıştırma
-
-```bash
-# Belirli bir thread üst sınırı ile çalıştırma (örn: 8 thread)
-./matrix_app 8
-
-# Sistemdeki tüm donanımsal mantıksal çekirdekleri kullanarak çalıştırma
-./matrix_app
-```
+### Tablo: Speedup Degerleri ###
+(T_serial = 0.018230 s)
+---------------------------------------------------------
+  Thread Sayisi         static        dynamic         guided
+---------------------------------------------------------
+              1       1.004408       1.004961       1.003855
+              2       1.935244       1.929101       1.937301
+              4       3.567515       3.553606       3.581532
+              8       5.609231       5.557927       5.626543
+---------------------------------------------------------
